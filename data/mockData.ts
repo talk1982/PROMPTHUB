@@ -1,3 +1,4 @@
+// FIX: Removed file boundary markers from the top and bottom of the file.
 import { Prompt, Tag, User } from '../types';
 
 // More detailed mock users for a richer experience
@@ -77,6 +78,13 @@ export const mockTags: Tag[] = [
             { id: '4-2', name: 'Market Analysis' },
         ]
     },
+    {
+        id: '5',
+        name: 'Marketing',
+        children: [
+            { id: '5-1', name: 'SEO Copywriting' }
+        ]
+    }
 ];
 
 // Prompts updated to use user IDs for the author field
