@@ -1,5 +1,51 @@
+import { Prompt, Tag, User } from '../types';
 
-import { Prompt, Tag } from '../types';
+// More detailed mock users for a richer experience
+export const mockUsers: User[] = [
+    { 
+        id: 'u1', 
+        username: 'User123',
+        name: 'Alex',
+        surname: 'Johnson',
+        email: 'alex@example.com',
+        password: 'alex@example.com',
+        avatar: 'https://i.pravatar.cc/150?u=u1'
+    },
+    { 
+        id: 'u2', 
+        username: 'ArtFan',
+        name: 'Bella',
+        surname: 'Chen',
+        email: 'bella@example.com',
+        password: 'bella@example.com',
+        avatar: 'https://i.pravatar.cc/150?u=u2'
+    },
+    { 
+        id: 'u3', 
+        username: 'DevTrader',
+        name: 'Charlie',
+        surname: 'Davis',
+        email: 'charlie@example.com',
+        password: 'charlie@example.com',
+    },
+    { 
+        id: 'u4', 
+        username: 'MarketingMaven',
+        name: 'Diana',
+        surname: 'Prince',
+        email: 'diana@example.com',
+        password: 'diana@example.com',
+        avatar: 'https://i.pravatar.cc/150?u=u4'
+    },
+    { 
+        id: 'u5', 
+        username: 'Dreamer',
+        name: 'Ethan',
+        surname: 'Hunt',
+        email: 'ethan@example.com',
+        password: 'ethan@example.com',
+    }
+];
 
 export const mockTags: Tag[] = [
     { 
@@ -33,6 +79,7 @@ export const mockTags: Tag[] = [
     },
 ];
 
+// Prompts updated to use user IDs for the author field
 export const mockPrompts: Prompt[] = [
     {
         id: 'p1',
@@ -41,7 +88,7 @@ export const mockPrompts: Prompt[] = [
         aiModel: 'Midjourney v6',
         tags: ['1', '1-1'],
         isPublic: true,
-        author: 'User123',
+        author: 'u1', // User ID
         createdAt: '2023-10-26T10:00:00Z',
         sampleResult: {
             type: 'image',
@@ -55,7 +102,7 @@ export const mockPrompts: Prompt[] = [
         aiModel: 'DALL-E 3',
         tags: ['1', '1-2'],
         isPublic: true,
-        author: 'ArtFan',
+        author: 'u2', // User ID
         createdAt: '2023-10-25T14:30:00Z',
         sampleResult: {
             type: 'image',
@@ -69,7 +116,7 @@ export const mockPrompts: Prompt[] = [
         aiModel: 'Gemini Pro',
         tags: ['3', '4', '4-1'],
         isPublic: false,
-        author: 'DevTrader',
+        author: 'u3', // User ID
         createdAt: '2023-10-24T18:00:00Z',
         sampleResult: {
             type: 'text',
@@ -83,7 +130,7 @@ export const mockPrompts: Prompt[] = [
         aiModel: 'Claude 3 Opus',
         tags: ['2', '2-1'],
         isPublic: true,
-        author: 'MarketingMaven',
+        author: 'u4', // User ID
         createdAt: '2023-10-23T09:15:00Z',
         sampleResult: {
             type: 'text',
@@ -97,7 +144,7 @@ export const mockPrompts: Prompt[] = [
         aiModel: 'Stable Diffusion XL',
         tags: ['1', '1-3'],
         isPublic: true,
-        author: 'Dreamer',
+        author: 'u5', // User ID
         createdAt: '2023-10-22T11:45:00Z',
         sampleResult: {
             type: 'image',

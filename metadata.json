@@ -1,5 +1,5 @@
 {
-  "name": "Prompt Vault",
+  "name": "PromptHub",
   "description": "A sophisticated web application to store, manage, and share AI prompts. Organize prompts with nested tags, track the AI model used, and view sample results. Users can keep prompts private or share them with the community.",
   "requestFramePermissions": []
 }

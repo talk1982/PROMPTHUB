@@ -1,172 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import { Prompt, Tag } from '../types';
-import { CloseIcon, TagIcon, ChevronDownIcon, ChevronRightIcon } from './icons';
-
-// A helper component for rendering the tag selection tree
-interface TagSelectionTreeProps {
-    tags: Tag[];
-    selectedTagIds: Set<string>;
-    onTagToggle: (tagId: string) => void;
-    level?: number;
-}
-
-const TagSelectionTree: React.FC<TagSelectionTreeProps> = ({ tags, selectedTagIds, onTagToggle, level = 0 }) => {
-    const [openTags, setOpenTags] = useState<Set<string>>(new Set());
-
-    const handleParentTagClick = (tagId: string) => {
-        setOpenTags(prev => {
-            const newOpenTags = new Set(prev);
-            newOpenTags.has(tagId) ? newOpenTags.delete(tagId) : newOpenTags.add(tagId);
-            return newOpenTags;
-        });
-    };
-
-    return (
-        <ul className="space-y-1">
-            {tags.map(tag => (
-                <li key={tag.id}>
-                    <div className="flex items-center" style={{ paddingLeft: `${level * 1.5}rem` }}>
-                        {tag.children && tag.children.length > 0 && (
-                             <button type="button" onClick={() => handleParentTagClick(tag.id)} className="mr-1 p-1 rounded-full hover:bg-primary">
-                                {openTags.has(tag.id) ? <ChevronDownIcon className="h-4 w-4"/> : <ChevronRightIcon className="h-4 w-4"/>}
-                            </button>
-                        )}
-                        <label className="flex items-center p-2 rounded-md transition-colors duration-150 cursor-pointer hover:bg-primary flex-grow">
-                             <input
-                                type="checkbox"
-                                checked={selectedTagIds.has(tag.id)}
-                                onChange={() => onTagToggle(tag.id)}
-                                className="h-4 w-4 rounded bg-primary border-secondary text-accent focus:ring-accent"
-                             />
-                             <TagIcon className="h-4 w-4 mx-2 flex-shrink-0" />
-                             <span className="text-sm">{tag.name}</span>
-                        </label>
-                    </div>
-                    {tag.children && openTags.has(tag.id) && (
-                        <TagSelectionTree
-                            tags={tag.children}
-                            selectedTagIds={selectedTagIds}
-                            onTagToggle={onTagToggle}
-                            level={level + 1}
-                        />
-                    )}
-                </li>
-            ))}
-        </ul>
-    );
-};
-
+import { CloseIcon } from './icons';
 
 interface EditPromptModalProps {
     prompt: Prompt;
-    allTags: Tag[];
     onClose: () => void;
-    onSave: (prompt: Prompt) => void;
+    onEditPrompt: (updatedPrompt: Prompt) => void;
+    tags: Tag[];
 }
 
-const EditPromptModal: React.FC<EditPromptModalProps> = ({ prompt, allTags, onClose, onSave }) => {
-    const [formData, setFormData] = useState<Prompt>(prompt);
+const EditPromptModal: React.FC<EditPromptModalProps> = ({ prompt, onClose, onEditPrompt, tags }) => {
+    const [title, setTitle] = useState(prompt.title);
+    const [promptText, setPromptText] = useState(prompt.promptText);
+    const [aiModel, setAiModel] = useState(prompt.aiModel);
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>(prompt.tags);
+    const [isPublic, setIsPublic] = useState(prompt.isPublic);
 
     useEffect(() => {
-        setFormData(prompt);
+        setTitle(prompt.title);
+        setPromptText(prompt.promptText);
+        setAiModel(prompt.aiModel);
+        setSelectedTagIds(prompt.tags);
+        setIsPublic(prompt.isPublic);
     }, [prompt]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
-
-        if (name.startsWith('sampleResult.')) {
-            const field = name.split('.')[1];
-            setFormData(prev => ({
-                ...prev,
-                sampleResult: { ...(prev.sampleResult || { type: 'text', content: '' }), [field]: value }
-            }));
-        } else {
-             setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-            }));
-        }
-    };
-    
-    const handleTagToggle = (tagId: string) => {
-        setFormData(prev => {
-            const newTags = new Set(prev.tags);
-            if (newTags.has(tagId)) {
-                newTags.delete(tagId);
-            } else {
-                newTags.add(tagId);
-            }
-            return { ...prev, tags: Array.from(newTags) };
-        });
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
+        onEditPrompt({
+            ...prompt,
+            title,
+            promptText,
+            aiModel,
+            tags: selectedTagIds,
+            isPublic
+        });
+    };
+
+    const handleTagChange = (tagId: string) => {
+        setSelectedTagIds(prev =>
+            prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+        );
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-primary rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-secondary flex justify-between items-center flex-shrink-0">
+        <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-primary rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-6 border-b border-secondary flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-text-primary">Edit Prompt</h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-secondary transition-colors">
                         <CloseIcon className="h-6 w-6 text-text-secondary" />
                     </button>
                 </div>
-
-                <form id="edit-prompt-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Left Column */}
-                    <div className="flex flex-col gap-6">
-                        <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-text-secondary mb-1">Title</label>
-                            <input type="text" name="title" id="title" value={formData.title} onChange={handleChange} className="w-full bg-secondary border border-secondary/50 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-accent transition" required />
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div>
+                        <label htmlFor="title-edit" className="block text-sm font-medium text-text-primary mb-1">Title</label>
+                        <input type="text" id="title-edit" value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-secondary border border-secondary/50 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-accent" />
+                    </div>
+                    <div>
+                        <label htmlFor="promptText-edit" className="block text-sm font-medium text-text-primary mb-1">Prompt Text</label>
+                        <textarea id="promptText-edit" value={promptText} onChange={e => setPromptText(e.target.value)} required rows={6} className="w-full bg-secondary border border-secondary/50 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-accent"></textarea>
+                    </div>
+                    <div>
+                        <label htmlFor="aiModel-edit" className="block text-sm font-medium text-text-primary mb-1">AI Model</label>
+                        <input type="text" id="aiModel-edit" value={aiModel} onChange={e => setAiModel(e.target.value)} required className="w-full bg-secondary border border-secondary/50 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-accent" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-text-primary mb-2">Tags</label>
+                        <div className="max-h-40 overflow-y-auto bg-secondary p-2 rounded-lg space-y-2">
+                             {tags.map(tag => (
+                                <div key={tag.id}>
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" checked={selectedTagIds.includes(tag.id)} onChange={() => handleTagChange(tag.id)} className="form-checkbox h-4 w-4 text-accent bg-secondary border-secondary/50 rounded focus:ring-accent"/>
+                                        <span>{tag.name}</span>
+                                    </label>
+                                    {tag.children && (
+                                        <div className="ml-6 mt-1 space-y-1">
+                                            {tag.children.map(child => (
+                                                 <label key={child.id} className="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="checkbox" checked={selectedTagIds.includes(child.id)} onChange={() => handleTagChange(child.id)} className="form-checkbox h-4 w-4 text-accent bg-secondary border-secondary/50 rounded focus:ring-accent"/>
+                                                    <span>{child.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
-                        <div>
-                            <label htmlFor="promptText" className="block text-sm font-medium text-text-secondary mb-1">Prompt Text</label>
-                            <textarea name="promptText" id="promptText" value={formData.promptText} onChange={handleChange} rows={8} className="w-full bg-secondary border border-secondary/50 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-accent transition" required></textarea>
-                        </div>
-                        <div>
-                            <label htmlFor="aiModel" className="block text-sm font-medium text-text-secondary mb-1">AI Model</label>
-                            <input type="text" name="aiModel" id="aiModel" value={formData.aiModel} onChange={handleChange} className="w-full bg-secondary border border-secondary/50 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-accent transition" required />
-                        </div>
-                        <div className="flex items-center justify-between bg-secondary p-3 rounded-lg">
-                           <label htmlFor="isPublic" className="text-sm font-medium text-text-primary">Make Public</label>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="isPublic" id="isPublic" checked={formData.isPublic} onChange={handleChange} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-accent/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-text-primary">Visibility</label>
+                        <div className="flex items-center space-x-4">
+                            <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="visibility-edit" checked={isPublic} onChange={() => setIsPublic(true)} className="form-radio h-4 w-4 text-accent bg-secondary border-secondary/50 focus:ring-accent"/>
+                                <span className="ml-2">Public</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="visibility-edit" checked={!isPublic} onChange={() => setIsPublic(false)} className="form-radio h-4 w-4 text-accent bg-secondary border-secondary/50 focus:ring-accent"/>
+                                <span className="ml-2">Private</span>
                             </label>
                         </div>
                     </div>
-
-                    {/* Right Column */}
-                    <div className="flex flex-col gap-6">
-                        <div>
-                             <h4 className="block text-sm font-medium text-text-secondary mb-2">Tags</h4>
-                             <div className="bg-secondary p-3 rounded-lg max-h-60 overflow-y-auto">
-                                <TagSelectionTree tags={allTags} selectedTagIds={new Set(formData.tags)} onTagToggle={handleTagToggle} />
-                             </div>
-                        </div>
-                        <div>
-                            <h4 className="block text-sm font-medium text-text-secondary mb-2">Sample Result</h4>
-                            <div className="bg-secondary p-4 rounded-lg flex flex-col gap-4">
-                                <select name="sampleResult.type" value={formData.sampleResult?.type || 'text'} onChange={handleChange} className="w-full bg-primary border border-secondary/50 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-accent transition">
-                                    <option value="text">Text</option>
-                                    <option value="image">Image URL</option>
-                                </select>
-                                <textarea name="sampleResult.content" placeholder={formData.sampleResult?.type === 'image' ? "https://..." : "Sample text result..."} value={formData.sampleResult?.content || ''} onChange={handleChange} rows={4} className="w-full bg-primary border border-secondary/50 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-accent transition"></textarea>
-                            </div>
-                        </div>
-                    </div>
                 </form>
-
-                 <div className="p-6 border-t border-secondary flex justify-end items-center space-x-4 flex-shrink-0">
-                    <button type="button" onClick={onClose} className="bg-secondary hover:bg-secondary/70 text-text-primary font-bold py-2 px-6 rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                     <button type="submit" form="edit-prompt-form" className="bg-accent hover:bg-sky-400 text-primary font-bold py-2 px-6 rounded-lg transition-colors">
-                        Save Changes
-                    </button>
+                <div className="p-6 border-t border-secondary flex justify-end items-center space-x-4">
+                    <button type="button" onClick={onClose} className="bg-secondary hover:bg-secondary/70 text-text-primary font-bold py-2 px-6 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" onClick={handleSubmit} className="bg-accent hover:bg-sky-400 text-primary font-bold py-2 px-6 rounded-lg transition-colors">Save Changes</button>
                 </div>
             </div>
         </div>

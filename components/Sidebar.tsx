@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Tag } from '../types';
-import { TagIcon, ChevronDownIcon, ChevronRightIcon, EditIcon, GlobeIcon, UserIcon } from './icons';
+import { Tag, User } from '../types';
+import { TagIcon, ChevronDownIcon, ChevronRightIcon, EditIcon, GlobeIcon, UserIcon, CloseIcon } from './icons';
 
 interface TagNodeProps {
     tag: Tag;
@@ -59,15 +59,18 @@ const TagNode: React.FC<TagNodeProps> = ({ tag, selectedTagIds, onTagClick, leve
 
 
 interface SidebarProps {
+    isOpen: boolean;
+    onClose: () => void;
     tags: Tag[];
     selectedTagIds: string[];
     onTagSelectionChange: (selectedIds: string[]) => void;
     onEditTags: () => void;
     visibilityFilter: 'all' | 'private';
     onVisibilityChange: (filter: 'all' | 'private') => void;
+    currentUser: User;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ tags, selectedTagIds, onTagSelectionChange, onEditTags, visibilityFilter, onVisibilityChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, tags, selectedTagIds, onTagSelectionChange, onEditTags, visibilityFilter, onVisibilityChange, currentUser }) => {
     const selectedSet = new Set(selectedTagIds);
 
     const handleTagClick = (tagId: string) => {
@@ -81,51 +84,66 @@ const Sidebar: React.FC<SidebarProps> = ({ tags, selectedTagIds, onTagSelectionC
     };
     
     return (
-        <aside className="bg-primary border-r border-secondary w-72 p-4 flex flex-col flex-shrink-0 h-full">
-            <div className="mb-4">
-                <h2 className="text-lg font-semibold mb-2 px-2">View</h2>
-                <ul className="space-y-1">
-                    <li>
-                        <button 
-                            onClick={() => onVisibilityChange('all')}
-                            className={`w-full flex items-center p-2 rounded-md text-sm font-medium transition-colors ${
-                                visibilityFilter === 'all' ? 'bg-accent/20 text-accent' : 'hover:bg-secondary'
-                            }`}>
-                            <GlobeIcon className="h-4 w-4 mr-2" />
-                            All Prompts
-                        </button>
-                    </li>
-                     <li>
-                        <button 
-                            onClick={() => onVisibilityChange('private')}
-                            className={`w-full flex items-center p-2 rounded-md text-sm font-medium transition-colors ${
-                                visibilityFilter === 'private' ? 'bg-accent/20 text-accent' : 'hover:bg-secondary'
-                            }`}>
-                            <UserIcon className="h-4 w-4 mr-2" />
-                            My Prompts
-                        </button>
-                    </li>
-                </ul>
-            </div>
+        <>
+            {/* Backdrop for mobile */}
+            <div
+                onClick={onClose}
+                className={`fixed inset-0 bg-black/50 z-20 transition-opacity md:hidden ${
+                    isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+            />
+        
+            <aside className={`fixed inset-y-0 left-0 bg-primary border-r border-secondary w-72 p-4 flex flex-col flex-shrink-0 h-full z-30 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="md:hidden flex justify-end mb-4">
+                     <button onClick={onClose} className="p-2 rounded-full hover:bg-secondary transition-colors">
+                        <CloseIcon className="h-6 w-6 text-text-secondary" />
+                    </button>
+                </div>
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold mb-2 px-2">View</h2>
+                    <ul className="space-y-1">
+                        <li>
+                            <button 
+                                onClick={() => onVisibilityChange('all')}
+                                className={`w-full flex items-center p-2 rounded-md text-sm font-medium transition-colors ${
+                                    visibilityFilter === 'all' ? 'bg-accent/20 text-accent' : 'hover:bg-secondary'
+                                }`}>
+                                <GlobeIcon className="h-4 w-4 mr-2" />
+                                All Prompts
+                            </button>
+                        </li>
+                        <li>
+                            <button 
+                                onClick={() => onVisibilityChange('private')}
+                                className={`w-full flex items-center p-2 rounded-md text-sm font-medium transition-colors ${
+                                    visibilityFilter === 'private' ? 'bg-accent/20 text-accent' : 'hover:bg-secondary'
+                                }`}>
+                                <UserIcon className="h-4 w-4 mr-2" />
+                                My Prompts
+                            </button>
+                        </li>
+                    </ul>
+                </div>
 
-            <div className="flex-grow overflow-y-auto pr-2 border-t border-secondary pt-4">
-                <h2 className="text-lg font-semibold mb-4 px-2">Categories</h2>
-                <ul className="space-y-1">
-                    {tags.map(tag => (
-                        <TagNode key={tag.id} tag={tag} selectedTagIds={selectedSet} onTagClick={handleTagClick} level={0} />
-                    ))}
-                </ul>
-            </div>
-            <div className="mt-4 pt-4 border-t border-secondary">
-                <button 
-                    onClick={onEditTags}
-                    className="w-full flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/70 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
-                >
-                    <EditIcon className="h-5 w-5"/>
-                    Manage Tags
-                </button>
-            </div>
-        </aside>
+                <div className="flex-grow overflow-y-auto pr-2 border-t border-secondary pt-4">
+                    <h2 className="text-lg font-semibold mb-4 px-2">Categories</h2>
+                    <ul className="space-y-1">
+                        {tags.map(tag => (
+                            <TagNode key={tag.id} tag={tag} selectedTagIds={selectedSet} onTagClick={handleTagClick} level={0} />
+                        ))}
+                    </ul>
+                </div>
+                <div className="mt-4 pt-4 border-t border-secondary">
+                    <button 
+                        onClick={onEditTags}
+                        className="w-full flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/70 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
+                    >
+                        <EditIcon className="h-5 w-5"/>
+                        Manage Tags
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 };
 

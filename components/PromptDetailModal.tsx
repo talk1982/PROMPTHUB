@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Prompt, Tag } from '../types';
+import { Prompt, Tag, User } from '../types';
 import { refinePrompt } from '../services/geminiService';
-import { CloseIcon, CopyIcon, SparklesIcon, EditIcon, TrashIcon } from './icons';
+import { BotIcon, CalendarIcon, CloseIcon, CopyIcon, SparklesIcon, EditIcon, TrashIcon, UserIcon, LockIcon } from './icons';
 import TagChip from './TagChip';
 
 interface PromptDetailModalProps {
@@ -10,13 +10,17 @@ interface PromptDetailModalProps {
     onEdit: (prompt: Prompt) => void;
     onDelete: (prompt: Prompt) => void;
     allTagsMap: Map<string, Tag>;
+    usersMap: Map<string, User>;
+    currentUser: User | null;
 }
 
-const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose, onEdit, onDelete, allTagsMap }) => {
+const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose, onEdit, onDelete, allTagsMap, usersMap, currentUser }) => {
     const [isCopied, setIsCopied] = useState(false);
     const [isRefining, setIsRefining] = useState(false);
     const [refinedPrompt, setRefinedPrompt] = useState('');
     
+    const isAuthor = currentUser?.id === prompt.author;
+    const author = usersMap.get(prompt.author);
     const promptTags = prompt.tags.map(tagId => allTagsMap.get(tagId)?.name).filter(Boolean) as string[];
 
     const handleCopy = (text: string) => {
@@ -40,24 +44,40 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose, 
     };
 
     const handleEditClick = () => {
-        onClose(); // Close this modal first
-        onEdit(prompt); // Then open the edit modal
+        onClose();
+        onEdit(prompt);
     };
 
     const handleDeleteClick = () => {
-        onClose(); // Close this modal first
-        onDelete(prompt); // Then open the confirmation modal
+        onClose();
+        onDelete(prompt);
     };
 
     return (
         <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-primary rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-secondary flex justify-between items-center flex-shrink-0">
+                <div className="p-6 border-b border-secondary flex justify-between items-start flex-shrink-0">
                     <div>
-                        <h2 className="text-2xl font-bold text-text-primary">{prompt.title}</h2>
-                        <p className="text-sm text-text-secondary">Model: {prompt.aiModel}</p>
+                         <div className="flex items-center gap-3 mb-2">
+                            <h2 className="text-2xl font-bold text-text-primary">{prompt.title}</h2>
+                            {!prompt.isPublic && <div className="flex items-center gap-1.5 text-xs bg-secondary px-2 py-1 rounded-full text-text-secondary"><LockIcon className="h-3 w-3" /> Private</div>}
+                         </div>
+                        <div className="flex items-center gap-x-6 gap-y-2 text-sm text-text-secondary flex-wrap">
+                            <div className="flex items-center gap-2">
+                                <BotIcon className="h-4 w-4" />
+                                <span>{prompt.aiModel}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <UserIcon className="h-4 w-4" />
+                                <span>{author?.username || 'Unknown User'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="h-4 w-4" />
+                                <span>{new Date(prompt.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-secondary transition-colors">
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-secondary transition-colors flex-shrink-0">
                         <CloseIcon className="h-6 w-6 text-text-secondary" />
                     </button>
                 </div>
@@ -135,11 +155,23 @@ const PromptDetailModal: React.FC<PromptDetailModalProps> = ({ prompt, onClose, 
                 </div>
 
                  <div className="p-6 border-t border-secondary flex justify-end items-center space-x-4 flex-shrink-0">
-                    <button type="button" onClick={handleDeleteClick} className="bg-red-600/20 hover:bg-red-600/40 text-red-400 font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
-                        <TrashIcon className="h-5 w-5"/> Delete
-                    </button>
-                     <button type="button" onClick={handleEditClick} className="bg-secondary hover:bg-secondary/70 text-text-primary font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
-                        <EditIcon className="h-5 w-5"/> Edit
+                    {isAuthor && (
+                        <>
+                            <button type="button" onClick={handleDeleteClick} className="bg-red-600/20 hover:bg-red-600/40 text-red-400 font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
+                                <TrashIcon className="h-5 w-5"/> Delete
+                            </button>
+                            <button type="button" onClick={handleEditClick} className="bg-secondary hover:bg-secondary/70 text-text-primary font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
+                                <EditIcon className="h-5 w-5"/> Edit
+                            </button>
+                        </>
+                    )}
+                     <button
+                        type="button"
+                        onClick={() => handleCopy(prompt.promptText)}
+                        className="bg-accent hover:bg-sky-400 text-primary font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                        <CopyIcon className="h-5 w-5"/>
+                        <span>{isCopied ? 'Copied!' : 'Copy Prompt'}</span>
                     </button>
                 </div>
 
